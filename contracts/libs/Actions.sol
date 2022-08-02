@@ -1,92 +1,52 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-
 library Actions {
-    // Possible Actions
-    enum UserOptionActionType {
-        ////@notice: User requests to purchases option
-        RequestBuyOption,
-        ////@notice: User requests to sells an option
-        RequestSellOption,
-        ////@notice: User cancels to purchases option
-        CancelRequestBuyOption,
-        ////@notice: User cancels to sell an option
-        CancelRequestSellOption,
+    enum ActionType {
+        Lend,
+        Borrow,
+        Repay,
+        Redeem,
+        Transfer
+    }
 
-        ////@notice: Market maker accepts to purchases selling option from user
-        AcceptBuyOption,
-        ////@notice: Market maker accepts to sells an option to user
-        AcceptSellOption,
-        ////@notice: Market maker cancels bid to purchase user's auction
-        CancelAcceptBuyOption,
-        ////@notice: Market maker cancels bid to sell an option to user
-        CancelAcceptSellOption,
-
-        ////@notice: User/Market Maker buys an option
+    enum OptionActionType {
         BuyOption,
-        ////@notice: User/Market Maker sells an option
         SellOption,
-
-        ////@notice: User withdraw option position before actual option starts
-        WithdrawOption,
-        ////@notice: User/Market maker redeems the reward upon option expiration
-        RedeemAuctionReward
+        RedeemOptionReward,
+        ReRollOption
     }
 
-    enum ContractOptionActionType {
-        ////@notice: Create a contract when Market maker agrees to buy/sell an option
-        CreateOptionContract,
-        ////@notice: (TBD) Destory a contract when option expires
-        DestroyOptionContract
-    }
-
-    // Arguments for any type of action
-    struct UserOptionActionArgs {
-        //type of actions that is being performed in the system
-        UserOptionActionType actionType;
-        address owner;
-        address secondAddress;
+    struct ActionArgs {
+        ////@notice: Type of action to execute
+        ActionType actionType;
+        ////@notice: Address of the account owner or message sender
+        address sender;
+        ////@notice: Asset that is to be transferred
         address asset;
-        uint256 contractId;
+        ////@notice: Type of pool to withdraw/deposit from/to
+        uint256 poolId;
+        ////@notice: Number of assets to [Lend|Borrow|Repay|Redeem|Transfer]
         uint256 amount;
-        bytes data;
     }
 
-    struct ContractOptionActionArgs {
-        ContractOptionActionType actionTypes;
-        address owner;
-        address secondAddress;
-        address asset;
-        uint256 contractId;
-        uint256 amount;
-        bytes data;
+    struct OptionActionArgs {
+        ////@notice: Type of option action to execute
+        OptionActionType optionActionType;
+        ////@notice: Option Stirke price
+        uint256 strikePrice;
+        ////@notice: Option collateral which option seller has to pay. 0 if not option seller
+        uint256 optionCollateral;
+        ////@notice: Amount of CALL option to purchase
+        uint256 callOptionPurchaseAmount;
+        ////@notice: Amount of PUT option to sell
+        uint256 putOptionPurchaseAmount;
+        ////@notice: Option expiration date
+        uint256 expiration;
+        ////@notice: Check option has been exercised
+        bool exercised;
+        ////@notice: Address of the borrower
+        address borrowerAddress;
     }
 
-    enum AuctionActionType {
-        /* User Auction Action */
-        ////@notice: User request to buy an option from Market Maker
-        RegisterBuyAuction,
-        ////@notice: User request to cancel the registered option he/she previously registered
-        DeregisterAuction,
-        ////@notice: Users request to buy an option from Market Makers
-        RequestOptionBuy,
-        ////@notice: Users request to sell an option to Market Makers
-        RequestOptionSell,
-
-        /* Market Maker Auction Action */
-        ////@notice: Market Maker bids an option requested by User
-        BidAuction,
-        ////@notice: Market Maker cancels the bid that he/she previously bidded
-        CancelBid,
-        ////@notice: Market Makers accept to buy an option from User
-        AcceptOptionBuy,
-        ////@notice: Market Makers accept to sell an option to User
-        AcceptOptionSell
-    }
-
-    struct AuctionActionArgs {
-        AuctionActionType actionType;
-    }
 }
-
