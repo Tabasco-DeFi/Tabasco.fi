@@ -90,6 +90,7 @@ contract TabascoERC20 is ITabascoERC20 {
         return true;
     }
 
+    //// @notice: Transfer an (underlying)asset into the protocol
     function mint() external returns (bool) {}
     
     function _mint() private {}
@@ -97,5 +98,9 @@ contract TabascoERC20 is ITabascoERC20 {
     function burn() external returns (bool) {}
 
     function _burn() private {}
+
+    function borrow() external returns (bool) {}
+
+    function _borrow() private {}
 
 }
