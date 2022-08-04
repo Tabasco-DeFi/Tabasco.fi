@@ -1,104 +1,145 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 library Actions {
     enum ActionType {
         Lend,
+        Withdraw,
         Borrow,
         Repay,
-        Redeem,
         Transfer
     }
 
-    enum OptionActionType {
-        BuyOption,
-        SellOption,
-        RedeemOptionReward,
-        ReRollOption
-    }
-
-    enum OptionType {
-        CALL,
-        PUT
-    }
-
+    //// @dev General Action arguments
     struct ActionArgs {
         ////@notice: Type of action to execute
         ActionType actionType;
         ////@notice: Address of the account owner or message sender
         address sender;
-        ////@notice: Asset that is to be transferred
+        ////@notice: Asset that is to be transferred (contract address)
+        ////@notice: if isLender == True, collateral == asset
         address asset;
         ////@notice: Type of pool to withdraw/deposit from/to
         uint256 poolId;
-        ////@notice: Number of assets to [Lend|Borrow|Repay|Redeem|Transfer]
+        ////@notice: check user status [Lender | Borrower]
+        uint256 amount;
+        ////@notice: Interest that has to be repaid by borrower
+        uint256 interest;
+        ////@notice: check if user has previously deposit asset
+        bool hasDeposit;
+    }
+
+    struct LendAssetArgs {
+        ActionType actionType;
+        address sender;
+        address asset;
+        uint256 poolId;
+        bool isLender;
+        uint256 amount;
+        bool hasDeposit;
+    }
+
+    struct WithdrawAssetArgs {
+        ActionType actionType;
+        address sender;
+        address asset;
+        uint256 poolId;
         uint256 amount;
     }
 
-    //// @dev : Includes all the option arguments that will be passed from outside
-    ////@dev : Have to be discussed on whether an option reroll can be cancelled when borrower returns the borrowed amount
-    struct OptionActionArgs {
-        ////@notice: Type of option action to execute
-        OptionActionType optionActionType;
-        ////@notice: Option Stirke price
-        uint256 strikePrice;
-        ////@notice: Option collateral which option seller has to pay. 0 if not option seller
-        uint256 optionCollateral;
-        ////@notice: Amount of CALL option to purchase
-        uint256 callOptionPurchaseAmount;
-        ////@notice: Amount of PUT option to sell
-        uint256 putOptionPurchaseAmount;
-        ////@notice: Option expiration date
-        uint256 expiration;
-        ////@notice: How many times to reroll the option
-        uint256 optionRerollCount;
-        ////@notice: Check option has been exercised
-        bool exercised;
-        ////@notice: Address of the borrower
-        address borrowerAddress;
+    struct BorrowAssertArgs {
+        ActionType actionType;
+        address sender;
+        address asset;
+        uint256 poolId;
+        bool isLender;
+        uint256 amount;
+        uint256 interest;
+        bool hasDeposit;
     }
 
-    struct BuyOptionArgs {
-        ////@notice: Option type : [CALL | PUT]
-        OptionType optionType;
-        ////@notice: Option Stirke price
-        uint256 strikePrice;
-        ////@notice: Option Premium 
-        uint256 optionPremium;
-        ////@notice: Amount of [CALL | PUT] option to purchase
-        uint256 optionBuyAmount;
-        ////@notice: Option expiration date
-        uint256 expiration;
-        ////@notice: Check option has been exercised
-        bool exercised;
-        ////@notice: Address of the borrower
-        address borrowerAddress;
+    struct RepayAssertArgs {
+        ActionType actionType;
+        address sender;
+        address asset;
+        uint256 poolId;
+        uint256 amount;
     }
 
-    //// @dev : TODO For future option products (TBD)
-    struct SellOptionArgs {
-        ////@notice: Option type : [Call | PUT]
-        OptionType optionType;
-        ////@notice: Option Stirke price
-        uint256 strikePrice;
-        ////@notice: Option collateral which option seller has to pay. 0 if not option seller
-        uint256 optionCollateral;
-        ////@notice: Amount of [CALL | PUT] option to sell
-        uint256 optionSellAmount;
-        ////@notice: Option expiration date
-        uint256 expiration;
-        ////@notice: Check option has been exercised
-        bool exercised;
-        ////@notice: Address of the borrower
-        address borrowerAddress;
+    function _setLendAssetArgs(ActionArgs memory _args) internal view returns(LendAssetArgs memory) {
+        // Check Lending amount > 0
+        require(_args.amount > 0);
+        // Check user has enough tokens to transfer
+        require(_args.amount <= IERC20(_args.asset).balanceOf(_args.sender));
+        // Check null address
+        require(_args.sender != address(0));
+
+        return LendAssetArgs({
+            actionType: _args.actionType,
+            sender: _args.sender,
+            asset: _args.asset,
+            poolId: _args.poolId,
+            isLender: true,
+            amount: _args.amount,
+            hasDeposit: true
+        });
     }
 
-    // struct RedeemRewardArgs {} 
+    function _setBorrowAssetArgs(ActionArgs memory _args) internal view returns(BorrowAssertArgs memory) {
+        // Check Lending amount > 0
+        require(_args.amount > 0);
+        // Check user has enough tokens to transfer
+        require(_args.amount <= IERC20(_args.asset).balanceOf(_args.sender));
+        // Check null address
+        require(_args.sender != address(0));
 
-    // struct RerollArgs {}
-
-    function _setBuyOptionArgs(OptionActionArgs memory _args) internal pure returns (BuyOptionArgs memory){
-        require(_args.optionActionType == OptionActionType.BuyOption);
+        return BorrowAssertArgs({
+            actionType: _args.actionType,
+            sender: _args.sender,
+            asset: _args.asset,
+            poolId: _args.poolId,
+            isLender: false,
+            amount: _args.amount,
+            interest: _args.interest,
+            hasDeposit: true
+        });
     }
 
+    function _setWithdrawAssetArgs(ActionArgs memory _args) internal view returns(WithdrawAssetArgs memory) {
+        // Check Lending amount > 0
+        require(_args.amount > 0);
+        // Check user has enough tokens to transfer
+        require(_args.amount <= IERC20(_args.asset).balanceOf(_args.sender));
+        // Check null address
+        require(_args.sender != address(0));
+        require(_args.hasDeposit);
+
+        return WithdrawAssetArgs({
+            actionType: _args.actionType,
+            sender: _args.sender,
+            asset: _args.asset,
+            poolId: _args.poolId,
+            amount: _args.amount
+        });
+    }
+
+    function _setRepayAssetArgs(ActionArgs memory _args) internal view returns(RepayAssertArgs memory) {
+        // Check Lending amount > 0
+        require(_args.amount > 0);
+        // Check user has enough tokens to transfer
+        require(_args.amount <= IERC20(_args.asset).balanceOf(_args.sender));
+        // Check null address
+        require(_args.sender != address(0));
+        require(_args.hasDeposit);
+
+        return RepayAssertArgs({
+            actionType: _args.actionType,
+            sender: _args.sender,
+            asset: _args.asset,
+            poolId: _args.poolId,
+            amount: _args.amount
+        });
+    }
 }
